@@ -1,13 +1,9 @@
-/* converting to their respective file extensions */
-
 import path from 'path';
 import imagemin from 'imagemin';
+import imageminWebp from 'imagemin-webp';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-
-import imageminJpegtran from 'imagemin-jpegtran';
-import imageminPngquant from 'imagemin-pngquant';
-import imageminMozjpeg from 'imagemin-mozjpeg';
+import glob from "glob"
 
 function getDirectories(path) {
     return fs.readdirSync(path)
@@ -20,24 +16,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // C:/cb/cb-js
-// console.log(path.join(__dirname, "Images"));
+console.log(path.join(__dirname, "Images"));
 const directories = getDirectories(__dirname);
-// console.log(directories);
+console.log(directories);
 
 // C:\cb\cb-js\index.html
-// console.log(path.join(__dirname, 'index.html'));
+console.log(path.join(__dirname, 'index.html'));
 
-let plugins = [
-    // imageminJpegtran({quality: 75}),
-    // imageminPngquant({
-    //     quality: [0.6, 0.8]
-    // })
-    // imageminJpegtran({
-    //     quality: 50
-    // }),
-    imageminMozjpeg(),
-    imageminPngquant()
-]
 function convert(images_path, dest) {
 
     (async () => {
@@ -48,10 +33,9 @@ function convert(images_path, dest) {
         // await imagemin([`${images_path}/**/*.{jpg,png,jpeg,JPG,JPEG,PNG,svg,webp}`], {
         await imagemin([`${images_path}/*.{jpg,png,jpeg,JPG,JPEG,PNG,svg,webp}`], {
             destination: `${dest}`,
-            plugins,
-            // use: [
-            //     imageminJpegtran()
-            // ]
+            plugins: [
+                imageminWebp({ quality: 50 })
+            ]
         });
 
         for (let i = 0; i < directories.length; i++) {
