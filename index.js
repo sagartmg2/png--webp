@@ -1,65 +1,37 @@
-/* converting to their respective file extensions */
-
 import path from 'path';
 import imagemin from 'imagemin';
-import { fileURLToPath } from 'url';
+import imageminWebp from 'imagemin-webp';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-import imageminJpegtran from 'imagemin-jpegtran';
-import imageminPngquant from 'imagemin-pngquant';
-import imageminMozjpeg from 'imagemin-mozjpeg';
 
-function getDirectories(path) {
-    return fs.readdirSync(path)
-        .filter(file => fs.statSync(`${path}/${file}`).isDirectory());
+async function convertImagesToWebP(directoryPath) {
+    const files = fs.readdirSync(directoryPath);
+
+    for (const file of files) {
+        const filePath = path.join(directoryPath, file);
+        const stats = fs.statSync(filePath);
+
+        if (stats.isDirectory()) {
+            await convertImagesToWebP(filePath); // Recursively process subdirectories
+        } else if (stats.isFile()) {
+            const extension = path.extname(file).toLowerCase();
+            if (['.jpg', '.jpeg', '.png', '.webp', '.svg'].includes(extension)) {
+                const outputDir = path.dirname(filePath).replace('Images', 'Build'); // Adjust the output directory path
+                fs.mkdirSync(outputDir, { recursive: true }); // Ensure output directory exists
+                await imagemin([filePath], {
+                    destination: outputDir,
+                    plugins: [imageminWebp({ quality: 50 })]
+                });
+                console.log(`Converted: ${filePath}`);
+            }
+        }
+    }
 }
-
-
 const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
-
-// C:/cb/cb-js
-// console.log(path.join(__dirname, "Images"));
-const directories = getDirectories(__dirname);
-// console.log(directories);
-
-// C:\cb\cb-js\index.html
-// console.log(path.join(__dirname, 'index.html'));
-
-let plugins = [
-    // imageminJpegtran({quality: 75}),
-    // imageminPngquant({
-    //     quality: [0.6, 0.8]
-    // })
-    // imageminJpegtran({
-    //     quality: 50
-    // }),
-    imageminMozjpeg(),
-    imageminPngquant()
-]
-function convert(images_path, dest) {
-
-    (async () => {
-
-
-        const directories = getDirectories(images_path);
-
-        // await imagemin([`${images_path}/**/*.{jpg,png,jpeg,JPG,JPEG,PNG,svg,webp}`], {
-        await imagemin([`${images_path}/*.{jpg,png,jpeg,JPG,JPEG,PNG,svg,webp}`], {
-            destination: `${dest}`,
-            plugins,
-            // use: [
-            //     imageminJpegtran()
-            // ]
-        });
-
-        for (let i = 0; i < directories.length; i++) {
-            convert(path.join(images_path, directories[i]), path.join(dest, directories[i]))
-        }
-
-        console.log('Images optimized');
-    })();
-}
-
-convert(path.join(__dirname, "Images"), path.join(__dirname, "Build"))
+// Change this to the root directory of your file system
+convertImagesToWebP(__dirname)
+    .then(() => console.log('Conversion complete'))
+    .catch(error => console.error('Error converting images:', error));
